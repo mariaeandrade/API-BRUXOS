@@ -4,6 +4,8 @@ const { bruxos } = dados;
 
 const getAllBruxos = (req, res) => {
     res.status(200).json({
+        success: true,
+        message: "Lista de bruxos convocada com sucesso",
         total: bruxos.length,
         bruxos: bruxos
     });
@@ -20,6 +22,12 @@ const getBruxoById = (req, res) => {
         bruxo:bruxo
     })
 }
+    if( !nome ) {
+    return res.status(400).json({
+        sucess: false,
+        message: "Nome é obrigatorios"
+    });
+}
 
     res.status(404).json({
         success: false,
@@ -30,12 +38,23 @@ const getBruxoById = (req, res) => {
 }
 const creatBruxo = (req, res) => {
     const { nome, casa, anoNascimento, especialidade, nivelMagia, ativo} = req.body
+    const nomeExistente =  bruxos.find(b => b.nome.toLowerCase() === nome.toLowerCase())
 
-    if( !nome || !casa ) {
+    if( !nome ) {
         return res.status(400).json({
             sucess: false,
-            message: "Nome e casa são obrigatorios"
+            message: "Nome é obrigatorios"
         });
+    }
+
+    if (nomeExistente) {
+        res.status(409).json({
+            success: false,
+            message: "Já existe um bruxo com esse nome!",
+            error: "WIZARD_ALREADY_EXIST",
+            suggestions: 
+            "Verifique lista de bruxos"
+        })
     }
     const novoBruxo = {
         id : bruxos.length + 1,
@@ -48,13 +67,84 @@ const creatBruxo = (req, res) => {
     }
     bruxos.push(novoBruxo);
 
+    if(novoBruxo) { 
     res.status(201).json({
         sucess: true,
-        message: "Novo bruxo adicionado",
+        message: "Novo bruxo matriculado em Hogwarts",
         bruxo: novoBruxo
     });
 }
+    res.status(400).json({
+        success: false, 
+        message: "Feitiço mal executado! Verifique os ingredientes",
+        error: "VALIDATION_ERROR",
+        suggestions: 
+        "Verifique se os dados necessários foram adicionados"
+    })
 
+
+}
+const updateBruxo = (req, res) => {
+    const id = parseInt(req.params.id);
+
+    const {  nome, casa, anoNascimento, especialidade, nivelMagia, ativo} = req.body; 
+
+    const casasLista = ["Grifinoria", "Lufa-Lufa", "Corvinal", "Sonserina"]
+
+
+    if (isNaN(id)) {
+        return res.status(400).json({
+            success: false,
+            message: "O id deve ser um número válido"
+        })
+    }
+
+    const bruxoExiste = bruxos.find(bruxo => bruxo.id === id);
+
+    if (!bruxoExiste) {
+        res.status(404).json({
+            success: false,
+            message: "Não é possivel atualizar atualizar o que não existe",
+            error: "WIZARD_NOT_FOUND",
+            suggestions: "Verifique a existência do bruxo antes de atualizar"
+        })
+    }
+
+
+    if(casa) {
+        if(!casasLista.includes(casa.toLowerCase())) {
+           return res.status(400).json({
+                success: false,
+                message: `O campo 'casa' deve ser uma das opções: ${casasLista(", ")}!`
+            })
+        }
+    }
+
+    const bruxoAtualizado = bruxos.map(bruxo => {
+        return bruxo.id === id
+            ? {
+                ...bruxo,
+                ...(nome      && { nome }),
+                ...(casa    && { casa }),
+                ...(anoNascimento  && { anoNascimento }),
+                ...(especialidade      && { especialidade }),
+                ...(nivelMagia      && { nivelMagia }),
+                ...(ativo && { ativo })
+            }
+            : bruxo;
+    });
+    
+    bruxos.splice(0, bruxos.length, ...bruxoAtualizado);
+
+    const bruxoNovo = bruxos.find(bruxo => bruxo.id === id);
+
+    res.status(200).json({
+        success: true,
+        message: "Dados atualizados com sucesso",
+        bruxo: bruxoNovo
+    })
+
+}
 const deleteBruxo = ( req, res) => {
     console.log("Passou por aqui")
     const id = parseInt(req.params.id);
@@ -81,9 +171,10 @@ const deleteBruxo = ( req, res) => {
 
     res.status(200).json ({
         sucess: true,
-        message:  `O bruxo ${id} foi removido com sucesso!`
+        message:  "Bruxo expulso de Hogwarts com sucesso!"
     })
-}
- 
-export {getAllBruxos, getBruxoById, creatBruxo, deleteBruxo};
 
+    
+}
+
+export {getAllBruxos, getBruxoById, creatBruxo, updateBruxo, deleteBruxo}
